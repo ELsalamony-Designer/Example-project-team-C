@@ -128,8 +128,9 @@
         <td>
           <select id="seller-${nextCode}">
             <option value="">Select Seller</option>
-            <option value="Ahmed Elkowaity">Ahmed Elkowaity</option>
-            <option value="Ahmed Al Mughazy">Ahmed Al Mughazy</option>
+            <option value="Mahmoud">Mahmoud</option>
+            <option value="Mohab">Mohab</option>
+            <option value="Anas">Anas</option>
           </select>
         </td>
         <td class="actions">
@@ -230,7 +231,7 @@
               <td>${code}</td>
               <td>${data.name}</td>
               <td>${data.phone}</td>
-              <td>${renderFileCell(data.offerImage, 'Quotation')}</td>
+              <td>${renderFileCell(data.offerImage, 'Show Order')}</td>
               <td>${renderFileCell(data.drawingImage, 'Drawing')}</td>
               <td>${data.seller || ""}</td>
               <td class="actions">
@@ -261,7 +262,7 @@
           <th>Code</th>
           <th>Client Name</th>
           <th>Phone Number</th>
-          <th>Quotation</th>
+          <th>Show Order</th>
           <th>Drawings</th>
           <th>Seller Name</th>
           <th>Actions</th>
