@@ -8,7 +8,7 @@
   <style>
     body {
       font-family: 'Cairo', sans-serif;
-      direction: ltr; /* Changed to ltr for English */
+      direction: ltr;
       padding: 20px;
       background-color: #f8f9fa;
       color: #343a40;
@@ -28,7 +28,7 @@
     }
     .top-buttons {
       display: flex;
-      justify-content: flex-start; /* Changed to flex-start for English */
+      justify-content: flex-start;
       gap: 10px;
       margin-bottom: 15px;
       flex-wrap: wrap;
@@ -99,14 +99,118 @@
     .file-btn:hover {
       background-color: #138496;
     }
+
+    /* Custom Message Box Styles */
+    #messageBox {
+      display: none;
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #4CAF50; /* Default success */
+      color: white;
+      padding: 15px 20px;
+      border-radius: 5px;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    /* Custom Modal Styles */
+    #customModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 1001;
+      justify-content: center;
+      align-items: center;
+    }
+    #customModal > div {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+    #customModal button {
+      padding: 10px 20px;
+      margin: 0 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #modalConfirmBtn { background-color: #28a745; color: white; }
+    #modalCancelBtn { background-color: #dc3545; color: white; }
   </style>
 
-  <script type="module" src="firebase-config.js"></script>
   <script type="module">
-    import { getDatabase, ref, set, remove, get, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-    import { database } from './firebase-config.js';
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
+    import { getDatabase, ref, set, remove, get, child } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getStorage } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDpT-XyPKNPKGetKYl_qDPKsdqL_u2SCyk",
+      authDomain: "atr-egclothes-2faeb.firebaseapp.com",
+      databaseURL: "https://atr-egclothes-2faeb-default-rtdb.firebaseio.com",
+      projectId: "atr-egclothes-2faeb",
+      storageBucket: "atr-egclothes-2faeb.firebasestorage.app",
+      messagingSenderId: "455708726120",
+      appId: "1:455708726120:web:5937ce0bfb1a395a0dfcdd",
+      measurementId: "G-T2HX8KGPMM"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const database = getDatabase(app); // Get Realtime Database instance
+    const storage = getStorage(app);   // Get Firebase Storage instance
 
     let rowCount = 0;
+    let resolveConfirm; // To handle the promise for custom confirm modal
+
+    // --- Custom Message Box Function ---
+    function showMessage(message, type = 'success') {
+        const msgBox = document.getElementById('messageBox');
+        msgBox.innerText = message;
+        msgBox.style.backgroundColor = type === 'success' ? '#4CAF50' : '#f44336'; // Green for success, red for error
+        msgBox.style.display = 'block';
+        setTimeout(() => {
+            msgBox.style.display = 'none';
+        }, 3000); // Hide after 3 seconds
+    }
+
+    // --- Custom Confirmation Modal Function ---
+    function showConfirmModal(message) {
+        return new Promise(resolve => {
+            const modal = document.getElementById('customModal');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+            const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+            modalMessage.innerText = message;
+            modal.style.display = 'flex'; // Use flex to center
+
+            resolveConfirm = resolve; // Store resolve function
+
+            modalConfirmBtn.onclick = () => {
+                modal.style.display = 'none';
+                resolveConfirm(true);
+            };
+
+            modalCancelBtn.onclick = () => {
+                modal.style.display = 'none';
+                resolveConfirm(false);
+            };
+        });
+    }
 
     window.addRow = function () {
       const tableBody = document.getElementById("tableBody");
@@ -148,7 +252,7 @@
       const drawing = document.getElementById(`drawing-${code}`).value.trim();
       const seller = document.getElementById(`seller-${code}`)?.value || "";
       if (!name || !phone || !offer || !drawing || !seller) {
-        alert("Please fill in all fields");
+        showMessage("Please fill in all fields", 'error');
         return;
       }
       await set(ref(database, "clients/" + code), {
@@ -158,7 +262,7 @@
         drawingImage: drawing,
         seller: seller
       });
-      alert("✅ Data saved successfully!");
+      showMessage("✅ Data saved successfully!");
       location.reload();
     };
 
@@ -174,13 +278,16 @@
       row.children[5].innerHTML = `
         <select id="seller-${code}">
           <option value="">Select Seller</option>
-          <option value="Ahmed Elkowaity" ${data.seller === "Ahmed Elkowaity" ? "selected" : ""}>Ahmed Elkowaity</option>
-          <option value="Ahmed Al Mughazy" ${data.seller === "Ahmed Al Mughazy" ? "selected" : ""}>Ahmed Al Mughazy</option>
+          <option value="Mahmoud" ${data.seller === "Mahmoud" ? "selected" : ""}>Mahmoud</option>
+          <option value="Mohab" ${data.seller === "Mohab" ? "selected" : ""}>Mohab</option>
+          <option value="Anas" ${data.seller === "Anas" ? "selected" : ""}>Anas</option>
         </select>`;
     };
 
     window.sendToContract = async function (code) {
-      if (!confirm("Are you sure you want to move this client to contracts?")) return;
+      const confirmed = await showConfirmModal("Are you sure you want to move this client to contracts?");
+      if (!confirmed) return;
+
       const snapshot = await get(child(ref(database), `clients/${code}`));
       if (!snapshot.exists()) return;
       const data = snapshot.val();
@@ -192,7 +299,7 @@
         seller: data.seller || ""
       });
       await remove(ref(database, "clients/" + code));
-      alert("✅ Moved successfully!");
+      showMessage("✅ Moved successfully!");
       location.reload();
     };
 
@@ -247,6 +354,18 @@
   </script>
 </head>
 <body>
+  <!-- Custom Message Box -->
+  <div id="messageBox"></div>
+
+  <!-- Custom Confirmation Modal -->
+  <div id="customModal">
+      <div>
+          <p id="modalMessage"></p>
+          <button id="modalConfirmBtn">Yes</button>
+          <button id="modalCancelBtn">No</button>
+      </div>
+  </div>
+
   <div class="container">
     <div class="top-buttons">
       <a href="contract.html" class="btn-primary">📄 Contracts Page</a>
