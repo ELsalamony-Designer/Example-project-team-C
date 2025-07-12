@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contracts Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #4CAF50;
+      --primary-dark: #45a049;
+      --secondary-color: #2196F3;
+      --accent-color: #FFC107;
+      --danger-color: #f44336;
+      --background-light: #f8f9fa;
+      --background-dark: #e9ecef;
+      --text-color: #343a40;
+      --border-color: #dee2e6;
+      --card-background: #ffffff;
+      --shadow-light: rgba(0, 0, 0, 0.08);
+    }
+    body {
+      font-family: 'Cairo', sans-serif;
+      direction: ltr; /* Changed to ltr for English */
+      padding: 20px;
+      background-color: var(--background-light);
+      color: var(--text-color);
+    }
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      background: var(--card-background);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px var(--shadow-light);
+    }
+    h2 {
+      text-align: center;
+      color: var(--primary-color);
+    }
+    .search-box {
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .search-box input {
+      padding: 10px;
+      width: 80%;
+      max-width: 400px;
+      font-size: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: var(--primary-color);
+      color: white;
+    }
+    img {
+      max-width: 100px;
+      max-height: 80px;
+      border: 1px solid var(--border-color);
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+    }
+    .actions button {
+      padding: 6px 12px;
+      margin: 2px;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .save-btn { background: var(--primary-color); }
+    .return-btn { background: var(--secondary-color); }
+    .edit-btn { background: var(--accent-color); color: #000; }
+    .delete-btn { background: var(--danger-color); }
+    .file-btn {
+      display: inline-block;
+      padding: 5px 10px;
+      background-color: #17a2b8;
+      color: white;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .file-btn:hover {
+      background-color: #138496;
+    }
+    .home-button {
+      display: inline-block;
+      margin-bottom: 20px;
+      background: var(--secondary-color);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+  <script type="module">
+    import { getDatabase, ref, set, remove, get, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { database } from './firebase-config.js';
+
+    function renderFile(link, label) {
+      if (!link) return 'N/A';
+      const ext = link.split('.').pop().toLowerCase();
+      const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
+      if (isImage) {
+        return `<img src="${link}" alt="${label}" />`;
+      } else {
+        return `<a href="${link}" target="_blank" class="file-btn">📄 Open ${label}</a>`;
+      }
+    }
+
+    window.onload = function () {
+      loadContracts();
+      document.getElementById("search").addEventListener("input", filterTable);
+    };
+
+    function filterTable() {
+      const value = document.getElementById("search").value.toLowerCase();
+      const rows = document.querySelectorAll("#tableBody tr");
+      rows.forEach(row => {
+        const name = row.querySelector("td[data-label='Name']").innerText.toLowerCase();
+        const phone = row.querySelector("td[data-label='Phone Number']").innerText.toLowerCase();
+        row.style.display = (name.includes(value) || phone.includes(value)) ? "" : "none";
+      });
+    }
+
+    async function loadContracts() {
+      const dbRef = ref(database, "contracts");
+      const tableBody = document.getElementById("tableBody");
+      const snapshot = await get(dbRef);
+      if (snapshot.exists()) {
+        snapshot.forEach(childSnap => {
+          const code = childSnap.key;
+          const data = childSnap.val();
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td data-label="Code">${code}</td>
+            <td data-label="Name">${data.name}</td>
+            <td data-label="Phone Number">${data.phone}</td>
+            <td data-label="Seller">${data.seller || ''}</td>
+            <td data-label="Contract Image Link"><input type="text" id="contract-${code}" value="${data.contractImage || ''}" /></td>
+            <td data-label="Accounts Image Link"><input type="text" id="accounts-${code}" value="${data.accountsImage || ''}" /></td>
+            <td data-label="Contract Image">${renderFile(data.contractImage, 'Contract')}</td>
+            <td data-label="Accounts Image">${renderFile(data.accountsImage, 'Accounts')}</td>
+            <td class="actions">
+              <button class="save-btn" onclick="saveImages('${code}')">Confirm</button>
+              <button class="return-btn" onclick="returnToClients('${code}')">Return</button>
+              <button class="edit-btn" onclick="editRow('${code}')">Edit</button>
+              <button class="delete-btn" onclick="deleteRow('${code}')">Delete</button>
+            </td>`;
+          tableBody.appendChild(row);
+        });
+      }
+    }
+
+    window.saveImages = async function (code) {
+      const contractURL = document.getElementById(`contract-${code}`).value.trim();
+      const accountsURL = document.getElementById(`accounts-${code}`).value.trim();
+      const snapshot = await get(child(ref(database), `contracts/${code}`));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        await set(ref(database, `contracts/${code}`), {
+          name: data.name,
+          phone: data.phone,
+          seller: data.seller || '',
+          contractImage: contractURL,
+          accountsImage: accountsURL
+        });
+        alert("✅ New images/files saved successfully!");
+        location.reload();
+      }
+    };
+
+    window.returnToClients = async function (code) {
+      const snapshot = await get(child(ref(database), `contracts/${code}`));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        await set(ref(database, `clients/${code}`), {
+          name: data.name,
+          phone: data.phone,
+          seller: data.seller || '',
+          offerImage: data.contractImage, // Assuming contractImage becomes offerImage
+          drawingImage: data.accountsImage // Assuming accountsImage becomes drawingImage
+        });
+        await remove(ref(database, `contracts/${code}`));
+        alert("🔁 Returned successfully!");
+        location.reload();
+      }
+    };
+
+    window.editRow = async function (code) {
+      const snapshot = await get(child(ref(database), `contracts/${code}`));
+      if (snapshot.exists()) {
+        document.getElementById(`contract-${code}`).value = snapshot.val().contractImage || '';
+        document.getElementById(`accounts-${code}`).value = snapshot.val().accountsImage || '';
+      }
+    };
+
+    window.deleteRow = async function (code) {
+      if (confirm("Are you sure you want to delete?")) {
+        await remove(ref(database, `contracts/${code}`));
+        alert("❌ Deleted successfully!");
+        location.reload();
+      }
+    };
+  </script>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="home-button">Return to Main Page</a>
+    <h2>📄 Contracts Page</h2>
+    <div class="search-box">
+      <input type="text" id="search" placeholder="Search by client name or phone number...">
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Phone Number</th>
+          <th>Seller Name</th>
+          <th>Contract Image Link</th>
+          <th>Accounts Image Link</th>
+          <th>Contract Image</th>
+          <th>Accounts Image</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</body>
+</html>
