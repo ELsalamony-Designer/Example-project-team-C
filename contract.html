@@ -2,52 +2,59 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Contracts Page</title>
+  <title>Client Management</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --primary-color: #4CAF50;
-      --primary-dark: #45a049;
-      --secondary-color: #2196F3;
-      --accent-color: #FFC107;
-      --danger-color: #f44336;
-      --background-light: #f8f9fa;
-      --background-dark: #e9ecef;
-      --text-color: #343a40;
-      --border-color: #dee2e6;
-      --card-background: #ffffff;
-      --shadow-light: rgba(0, 0, 0, 0.08);
-    }
     body {
       font-family: 'Cairo', sans-serif;
-      direction: ltr; /* Changed to ltr for English */
+      direction: ltr;
       padding: 20px;
-      background-color: var(--background-light);
-      color: var(--text-color);
+      background-color: #f8f9fa;
+      color: #343a40;
+      margin: 0;
     }
     .container {
       max-width: 1200px;
       margin: auto;
-      background: var(--card-background);
+      background: white;
       padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 12px var(--shadow-light);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
     h2 {
       text-align: center;
-      color: var(--primary-color);
+      color: #007bff;
     }
-    .search-box {
+    .top-buttons {
+      display: flex;
+      justify-content: flex-start;
+      gap: 10px;
       margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .top-buttons a, .top-buttons button {
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 16px;
+      color: white;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-primary { background-color: #007bff; }
+    .btn-add { background-color: #28a745; }
+    .search-box {
       text-align: center;
+      margin-bottom: 20px;
     }
     .search-box input {
       padding: 10px;
       width: 80%;
       max-width: 400px;
       font-size: 16px;
-      border: 1px solid var(--border-color);
+      border: 1px solid #dee2e6;
       border-radius: 4px;
     }
     table {
@@ -55,37 +62,30 @@
       border-collapse: collapse;
     }
     th, td {
-      border: 1px solid var(--border-color);
       padding: 10px;
       text-align: center;
+      border: 1px solid #dee2e6;
     }
     th {
-      background: var(--primary-color);
+      background-color: #007bff;
       color: white;
     }
     img {
       max-width: 100px;
       max-height: 80px;
-      border: 1px solid var(--border-color);
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 6px;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
+      border: 1px solid #dee2e6;
     }
     .actions button {
-      padding: 6px 12px;
+      padding: 5px 10px;
       margin: 2px;
-      color: white;
-      border: none;
       border-radius: 4px;
+      border: none;
+      color: white;
       cursor: pointer;
     }
-    .save-btn { background: var(--primary-color); }
-    .return-btn { background: var(--secondary-color); }
-    .edit-btn { background: var(--accent-color); color: #000; }
-    .delete-btn { background: var(--danger-color); }
+    .confirm-btn { background-color: #28a745; }
+    .edit-btn { background-color: #6c757d; }
+    .contract-btn { background-color: #007bff; }
     .file-btn {
       display: inline-block;
       padding: 5px 10px;
@@ -99,25 +99,223 @@
     .file-btn:hover {
       background-color: #138496;
     }
-    .home-button {
-      display: inline-block;
-      margin-bottom: 20px;
-      background: var(--secondary-color);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 4px;
-      text-decoration: none;
-      font-weight: bold;
-    }
-  </style>
-  <script type="module">
-    import { getDatabase, ref, set, remove, get, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-    import { database } from './firebase-config.js';
 
-    function renderFile(link, label) {
-      if (!link) return 'N/A';
+    /* Custom Message Box Styles */
+    #messageBox {
+      display: none;
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #4CAF50; /* Default success */
+      color: white;
+      padding: 15px 20px;
+      border-radius: 5px;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    /* Custom Modal Styles */
+    #customModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 1001;
+      justify-content: center;
+      align-items: center;
+    }
+    #customModal > div {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+    #customModal button {
+      padding: 10px 20px;
+      margin: 0 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #modalConfirmBtn { background-color: #28a745; color: white; }
+    #modalCancelBtn { background-color: #dc3545; color: white; }
+  </style>
+
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
+    import { getDatabase, ref, set, remove, get, child } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getStorage } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDpT-XyPKNPKGetKYl_qDPKsdqL_u2SCyk",
+      authDomain: "atr-egclothes-2faeb.firebaseapp.com",
+      databaseURL: "https://atr-egclothes-2faeb-default-rtdb.firebaseio.com",
+      projectId: "atr-egclothes-2faeb",
+      storageBucket: "atr-egclothes-2faeb.firebasestorage.app",
+      messagingSenderId: "455708726120",
+      appId: "1:455708726120:web:5937ce0bfb1a395a0dfcdd",
+      measurementId: "G-T2HX8KGPMM"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const database = getDatabase(app); // Get Realtime Database instance
+    const storage = getStorage(app);   // Get Firebase Storage instance
+
+    let rowCount = 0;
+    let resolveConfirm; // To handle the promise for custom confirm modal
+
+    // --- Custom Message Box Function ---
+    function showMessage(message, type = 'success') {
+        const msgBox = document.getElementById('messageBox');
+        msgBox.innerText = message;
+        msgBox.style.backgroundColor = type === 'success' ? '#4CAF50' : '#f44336'; // Green for success, red for error
+        msgBox.style.display = 'block';
+        setTimeout(() => {
+            msgBox.style.display = 'none';
+        }, 3000); // Hide after 3 seconds
+    }
+
+    // --- Custom Confirmation Modal Function ---
+    function showConfirmModal(message) {
+        return new Promise(resolve => {
+            const modal = document.getElementById('customModal');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+            const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+            modalMessage.innerText = message;
+            modal.style.display = 'flex'; // Use flex to center
+
+            modalConfirmBtn.onclick = () => {
+                modal.style.display = 'none';
+                resolve(true); // Resolve with true for confirmation
+            };
+
+            modalCancelBtn.onclick = () => {
+                modal.style.display = 'none';
+                resolve(false); // Resolve with false for cancellation
+            };
+
+            resolveConfirm = resolve; // Store resolve function for external use if needed, though not strictly necessary here.
+        });
+    }
+
+    window.addRow = function () {
+      const tableBody = document.getElementById("tableBody");
+      let nextCode = 1;
+      if (tableBody.rows.length > 0) {
+        const lastCode = parseInt(tableBody.rows[tableBody.rows.length - 1].cells[0].innerText);
+        nextCode = lastCode + 1;
+      }
+      if (nextCode <= rowCount) nextCode = rowCount + 1;
+
+      const row = tableBody.insertRow();
+      row.setAttribute('data-code', nextCode);
+      row.innerHTML = `
+        <td>${nextCode}</td>
+        <td><input type="text" id="name-${nextCode}" placeholder="Client Name"></td>
+        <td><input type="text" id="phone-${nextCode}" placeholder="Phone Number"></td>
+        <td><input type="text" id="offer-${nextCode}" placeholder="Quotation Link"></td>
+        <td><input type="text" id="drawing-${nextCode}" placeholder="Drawing Link"></td>
+        <td>
+          <select id="seller-${nextCode}">
+            <option value="">Select Seller</option>
+            <option value="Mahmoud">Mahmoud</option>
+            <option value="Mohab">Mohab</option>
+            <option value="Anas">Anas</option>
+          </select>
+        </td>
+        <td class="actions">
+          <button onclick="confirmRow('${nextCode}')" class="confirm-btn">Confirm</button>
+          <button onclick="editRow('${nextCode}')" class="edit-btn">Edit</button>
+          <button onclick="sendToContract('${nextCode}')" class="contract-btn">Contract</button>
+        </td>`;
+      rowCount = nextCode;
+    };
+
+    window.confirmRow = async function (code) {
+      const name = document.getElementById(`name-${code}`).value.trim();
+      const phone = document.getElementById(`phone-${code}`).value.trim();
+      const offer = document.getElementById(`offer-${code}`).value.trim();
+      const drawing = document.getElementById(`drawing-${code}`).value.trim();
+      const seller = document.getElementById(`seller-${code}`)?.value || "";
+      if (!name || !phone || !offer || !drawing || !seller) {
+        showMessage("Please fill in all fields", 'error');
+        return;
+      }
+      await set(ref(database, "clients/" + code), {
+        name: name,
+        phone: phone,
+        offerImage: offer,
+        drawingImage: drawing,
+        seller: seller
+      });
+      showMessage("✅ Data saved successfully!");
+      location.reload();
+    };
+
+    window.editRow = async function (code) {
+      const snapshot = await get(child(ref(database), `clients/${code}`));
+      if (!snapshot.exists()) return;
+      const data = snapshot.val();
+      const row = document.querySelector(`tr[data-code='${code}']`);
+      row.children[1].innerHTML = `<input type="text" id="name-${code}" value="${data.name}">`;
+      row.children[2].innerHTML = `<input type="text" id="phone-${code}" value="${data.phone}">`;
+      row.children[3].innerHTML = `<input type="text" id="offer-${code}" value="${data.offerImage}">`;
+      row.children[4].innerHTML = `<input type="text" id="drawing-${code}" value="${data.drawingImage}">`;
+      row.children[5].innerHTML = `
+        <select id="seller-${code}">
+          <option value="">Select Seller</option>
+          <option value="Mahmoud" ${data.seller === "Mahmoud" ? "selected" : ""}>Mahmoud</option>
+          <option value="Mohab" ${data.seller === "Mohab" ? "selected" : ""}>Mohab</option>
+          <option value="Anas" ${data.seller === "Anas" ? "selected" : ""}>Anas</option>
+        </select>`;
+    };
+
+    window.sendToContract = async function (code) {
+      const confirmed = await showConfirmModal("Are you sure you want to move this client to contracts?");
+      if (!confirmed) return;
+
+      const snapshot = await get(child(ref(database), `clients/${code}`));
+      if (!snapshot.exists()) return;
+      const data = snapshot.val();
+      await set(ref(database, "contracts/" + code), {
+        name: data.name,
+        phone: data.phone,
+        contractImage: data.offerImage, // Assuming offerImage becomes contractImage
+        accountsImage: data.drawingImage, // Assuming drawingImage becomes accountsImage
+        seller: data.seller || ""
+      });
+      await remove(ref(database, "clients/" + code));
+      showMessage("✅ Moved successfully!");
+      location.reload();
+    };
+
+    function filterTable() {
+      const value = document.getElementById("search").value.toLowerCase();
+      const rows = document.querySelectorAll("#tableBody tr");
+      rows.forEach(row => {
+        const name = row.children[1]?.innerText?.toLowerCase() || "";
+        const phone = row.children[2]?.innerText?.toLowerCase() || "";
+        row.style.display = (name.includes(value) || phone.includes(value)) ? "" : "none";
+      });
+    }
+
+    function renderFileCell(link, label) {
       const ext = link.split('.').pop().toLowerCase();
-      const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
+      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
       if (isImage) {
         return `<img src="${link}" alt="${label}" />`;
       } else {
@@ -126,119 +324,66 @@
     }
 
     window.onload = function () {
-      loadContracts();
       document.getElementById("search").addEventListener("input", filterTable);
-    };
-
-    function filterTable() {
-      const value = document.getElementById("search").value.toLowerCase();
-      const rows = document.querySelectorAll("#tableBody tr");
-      rows.forEach(row => {
-        const name = row.querySelector("td[data-label='Name']").innerText.toLowerCase();
-        const phone = row.querySelector("td[data-label='Phone Number']").innerText.toLowerCase();
-        row.style.display = (name.includes(value) || phone.includes(value)) ? "" : "none";
-      });
-    }
-
-    async function loadContracts() {
-      const dbRef = ref(database, "contracts");
+      const dbRef = ref(database, "clients");
       const tableBody = document.getElementById("tableBody");
-      const snapshot = await get(dbRef);
-      if (snapshot.exists()) {
-        snapshot.forEach(childSnap => {
-          const code = childSnap.key;
-          const data = childSnap.val();
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td data-label="Code">${code}</td>
-            <td data-label="Name">${data.name}</td>
-            <td data-label="Phone Number">${data.phone}</td>
-            <td data-label="Seller">${data.seller || ''}</td>
-            <td data-label="Contract Image Link"><input type="text" id="contract-${code}" value="${data.contractImage || ''}" /></td>
-            <td data-label="Accounts Image Link"><input type="text" id="accounts-${code}" value="${data.accountsImage || ''}" /></td>
-            <td data-label="Contract Image">${renderFile(data.contractImage, 'Contract')}</td>
-            <td data-label="Accounts Image">${renderFile(data.accountsImage, 'Accounts')}</td>
-            <td class="actions">
-              <button class="save-btn" onclick="saveImages('${code}')">Confirm</button>
-              <button class="return-btn" onclick="returnToClients('${code}')">Return</button>
-              <button class="edit-btn" onclick="editRow('${code}')">Edit</button>
-              <button class="delete-btn" onclick="deleteRow('${code}')">Delete</button>
-            </td>`;
-          tableBody.appendChild(row);
-        });
-      }
-    }
-
-    window.saveImages = async function (code) {
-      const contractURL = document.getElementById(`contract-${code}`).value.trim();
-      const accountsURL = document.getElementById(`accounts-${code}`).value.trim();
-      const snapshot = await get(child(ref(database), `contracts/${code}`));
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        await set(ref(database, `contracts/${code}`), {
-          name: data.name,
-          phone: data.phone,
-          seller: data.seller || '',
-          contractImage: contractURL,
-          accountsImage: accountsURL
-        });
-        alert("✅ New images/files saved successfully!");
-        location.reload();
-      }
-    };
-
-    window.returnToClients = async function (code) {
-      const snapshot = await get(child(ref(database), `contracts/${code}`));
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        await set(ref(database, `clients/${code}`), {
-          name: data.name,
-          phone: data.phone,
-          seller: data.seller || '',
-          offerImage: data.contractImage, // Assuming contractImage becomes offerImage
-          drawingImage: data.accountsImage // Assuming accountsImage becomes drawingImage
-        });
-        await remove(ref(database, `contracts/${code}`));
-        alert("🔁 Returned successfully!");
-        location.reload();
-      }
-    };
-
-    window.editRow = async function (code) {
-      const snapshot = await get(child(ref(database), `contracts/${code}`));
-      if (snapshot.exists()) {
-        document.getElementById(`contract-${code}`).value = snapshot.val().contractImage || '';
-        document.getElementById(`accounts-${code}`).value = snapshot.val().accountsImage || '';
-      }
-    };
-
-    window.deleteRow = async function (code) {
-      if (confirm("Are you sure you want to delete?")) {
-        await remove(ref(database, `contracts/${code}`));
-        alert("❌ Deleted successfully!");
-        location.reload();
-      }
+      get(dbRef).then(snapshot => {
+        if (snapshot.exists()) {
+          snapshot.forEach(childSnap => {
+            const code = childSnap.key;
+            const data = childSnap.val();
+            const row = tableBody.insertRow();
+            row.setAttribute('data-code', code);
+            row.innerHTML = `
+              <td>${code}</td>
+              <td>${data.name}</td>
+              <td>${data.phone}</td>
+              <td>${renderFileCell(data.offerImage, 'Show Order')}</td>
+              <td>${renderFileCell(data.drawingImage, 'Drawing')}</td>
+              <td>${data.seller || ""}</td>
+              <td class="actions">
+                <button onclick="confirmRow('${code}')" class="confirm-btn">Confirm</button>
+                <button onclick="editRow('${code}')" class="edit-btn">Edit</button>
+                <button onclick="sendToContract('${code}')" class="contract-btn">Contract</button>
+              </td>`;
+            if (+code > rowCount) rowCount = +code;
+          });
+        }
+      });
     };
   </script>
 </head>
 <body>
+  <!-- Custom Message Box -->
+  <div id="messageBox"></div>
+
+  <!-- Custom Confirmation Modal -->
+  <div id="customModal">
+      <div>
+          <p id="modalMessage"></p>
+          <button id="modalConfirmBtn">Yes</button>
+          <button id="modalCancelBtn">No</button>
+      </div>
+  </div>
+
   <div class="container">
-    <a href="index.html" class="home-button">Return to Main Page</a>
-    <h2>📄 Contracts Page</h2>
+    <div class="top-buttons">
+      <a href="contract.html" class="btn-primary">📄 Contracts Page</a>
+      <button onclick="addRow()" class="btn-add">➕ Add New Client</button>
+    </div>
+    <h2>📋 Client Management</h2>
     <div class="search-box">
-      <input type="text" id="search" placeholder="Search by client name or phone number...">
+      <input type="text" id="search" placeholder="Search by name or phone number...">
     </div>
     <table>
       <thead>
         <tr>
           <th>Code</th>
-          <th>Name</th>
+          <th>Client Name</th>
           <th>Phone Number</th>
+          <th>Show Order</th>
+          <th>Drawings</th>
           <th>Seller Name</th>
-          <th>Contract Image Link</th>
-          <th>Accounts Image Link</th>
-          <th>Contract Image</th>
-          <th>Accounts Image</th>
           <th>Actions</th>
         </tr>
       </thead>
